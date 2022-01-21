@@ -1,0 +1,47 @@
+---
+title: "Long-term stability of population responses in murine auditory cortex"
+author: "Filip Tomaska & Kelli Woodward"
+date: "21/01/2022"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Overview
+
+We propose using our own  two-photon imaging dataset.
+Mice expressing GCaMP7f (a calcium indicator of neuronal activity) in their auditory cortex were implanted with chronic cranial windows. Subpopulation of neurons in layer 2/3 (~70cells) were screened for consistent responses to sounds from a battery of 39 complex stimuli.
+
+The proposed dataset is comprised of 15 such subpopulations corresponding to FOVs acquired from 11 mice where the probed neuronal population showed consistent response to at least one of the sounds within 10 trials.
+All of these populations were then revisited on a weekly basis and submitted to the same stimulation protocol.
+In conclusion, the dataset includes 15 neuronal populations. Each was stimulated by a battery of 39 sounds during 10 trial sessions on a weekly basis over the course of one month.
+
+The data is in the form of population vectors describing the activity in a 250ms timebin following the presentation of the stimulus.
+
+##Reserch question
+
+We would like to use machine learning methods in order to determine whether the response of a given 
+neuronal subpopulation is sound-specific and whether it is consistent across days.
+
+We would like to train and test our neural net on data from the initial day of recording. Subsequently, we would like to see whether the network trained and validated on day zero can successfully recognize the sound representation on different recording days and against other sound representations. 
+Also, we would like to see whether the network can identify sounds possibly eliciting the same neuronal response since it has been hypothesized these responses represent neuronal correlates of perceptual categories.
+
+##Timeline
+
+There will be weekly sessions where both KW and FT will collaborate in real time and work on the problem.
+
+FT will preprocess and clean the data so that it can be imported and worked with in R.
+KW will handle the data and feed it into the pipeline once that has been setup.
+
+Coding and data processing tasks will be equally divided as they come up.
+
+The data is already cleaned and ready for processing in MATLAB. It's porting to R should be fairly straightforward and preliminary analysis can begin as soon as next week (week4)
+
+##Problems
+
+We anticipate that the dataset will require further processing in order to be compatible with R-based machine learning.
+We also cannot guarantee there will be any significant results as this is noisy data.
+
+data can be found at https://github.com/tomaskaf/pstat231
