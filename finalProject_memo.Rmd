@@ -23,7 +23,7 @@ In conclusion, the dataset includes 15 neuronal populations. Each was stimulated
 
 The data is in the form of population vectors describing the activity in a 250ms timebin following the presentation of the stimulus.
 
-##Reserch question
+##Research question
 
 We would like to use machine learning methods in order to determine whether the response of a given 
 neuronal subpopulation is sound-specific and whether it is consistent across days.
