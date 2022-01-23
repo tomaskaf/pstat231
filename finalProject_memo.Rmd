@@ -5,11 +5,8 @@ date: "21/01/2022"
 output: html_document
 ---
 
-```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
-```
 
-## Overview
+**Overview**
 
 We propose using our own dataset. The method used to generate this dataset is two-photon imaging of genetically encoded calcium indicators.
 
@@ -23,7 +20,8 @@ In conclusion, the dataset includes 15 neuronal populations. Each was stimulated
 
 The data is in the form of population vectors describing the activity in a 250ms timebin following the presentation of the stimulus.
 
-##Research question
+
+**Research question**
 
 We would like to use machine learning methods in order to determine whether the response of a given 
 neuronal subpopulation is sound-specific and whether it is consistent across days.
@@ -32,7 +30,8 @@ We would like to train and test our neural network on data from the initial day 
 
 Also, we would like to see whether the network can identify sounds possibly eliciting the same neuronal response since it has been hypothesized these responses represent neuronal correlates of perceptual categories shared by multiple sounds.
 
-##Timeline
+
+**Timeline**
 
 There will be weekly sessions where both KW and FT will collaborate in real time and work on the problem.
 
@@ -43,7 +42,7 @@ Coding and data processing tasks will be equally divided as they come up.
 
 The data is already cleaned and ready for processing in MATLAB. Its porting to R should be fairly straightforward and preliminary analysis can begin as soon as next week (week4 of W22)
 
-##Problems
+**Problems**
 
 We anticipate that the dataset will require further processing in order to be compatible with R-based machine learning.
 Due to the raw nature of the dataset, we cannot guarantee that we will be able to successfully apply statistical learning methods and obtain conclusive results.

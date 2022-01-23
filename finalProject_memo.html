@@ -171,26 +171,24 @@ pre code {
 </div>
 
 
-<div id="overview" class="section level2">
-<h2>Overview</h2>
+<p><strong>Overview</strong></p>
 <p>We propose using our own dataset. The method used to generate this dataset is two-photon imaging of genetically encoded calcium indicators.</p>
 <p>Mice expressing GCaMP7f (a calcium indicator of neuronal activity) in their auditory cortex were implanted with chronic cranial windows. Subpopulation of neurons in layer 2/3 (~70cells) were screened for consistent responses to sounds from a battery of 39 complex stimuli.</p>
 <p>The proposed dataset is comprised of 15 such subpopulations corresponding to FOVs acquired from 11 different animals where the probed neuronal population showed consistent response to at least one of the sounds within a session of 10 trials. All of these populations were then revisited on a weekly basis and submitted to the same stimulation protocol.</p>
 <p>In conclusion, the dataset includes 15 neuronal populations. Each was stimulated by a battery of 39 sounds during 10 trial sessions on a weekly basis over the course of one month.</p>
 <p>The data is in the form of population vectors describing the activity in a 250ms timebin following the presentation of the stimulus.</p>
-<p>##Research question</p>
+<p><strong>Research question</strong></p>
 <p>We would like to use machine learning methods in order to determine whether the response of a given neuronal subpopulation is sound-specific and whether it is consistent across days.</p>
 <p>We would like to train and test our neural network on data from the initial day of recording. Subsequently, we would like to see whether the network trained and validated on day zero can successfully recognize the sound representation on different recording days and discriminate it against other sound representations.</p>
 <p>Also, we would like to see whether the network can identify sounds possibly eliciting the same neuronal response since it has been hypothesized these responses represent neuronal correlates of perceptual categories shared by multiple sounds.</p>
-<p>##Timeline</p>
+<p><strong>Timeline</strong></p>
 <p>There will be weekly sessions where both KW and FT will collaborate in real time and work on the problem.</p>
 <p>FT will preprocess and clean the data so that it can be imported and worked with in R. KW will handle the data and feed it into the pipeline once that has been setup.</p>
 <p>Coding and data processing tasks will be equally divided as they come up.</p>
 <p>The data is already cleaned and ready for processing in MATLAB. Its porting to R should be fairly straightforward and preliminary analysis can begin as soon as next week (week4 of W22)</p>
-<p>##Problems</p>
+<p><strong>Problems</strong></p>
 <p>We anticipate that the dataset will require further processing in order to be compatible with R-based machine learning. Due to the raw nature of the dataset, we cannot guarantee that we will be able to successfully apply statistical learning methods and obtain conclusive results.</p>
 <p>data can be found at <a href="https://github.com/tomaskaf/pstat231" class="uri">https://github.com/tomaskaf/pstat231</a></p>
-</div>
 
 
 
