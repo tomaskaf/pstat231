@@ -1,0 +1,119 @@
+---
+title: "final"
+author: "Filip Tomaska"
+date: "08/02/2022"
+output: html_document
+---
+
+```{r , echo=T, warning=FALSE,error=F}
+library(R.matlab)
+library(readr)
+library(tidyverse)
+library(data.table)
+library(cluster)
+library(dendextend)
+library(factoextra)
+```
+
+## Data loading
+
+```{r , echo=T, warning=FALSE,error=F,cache=T}
+
+dataMat <- R.matlab::readMat("sortAudFile.mat",fixNames=T, ) 
+f19<-dataMat$sortAudFile[1]
+f33<-dataMat$sortAudFile[2]
+f34a<-dataMat$sortAudFile[3]
+f34b <-dataMat$sortAudFile[4]
+f34c <-dataMat$sortAudFile[5]
+f35  <-dataMat$sortAudFile[6]
+f37  <-dataMat$sortAudFile[7]
+f38 <-dataMat$sortAudFile[8]
+f40 <-dataMat$sortAudFile[9]
+f41a <-dataMat$sortAudFile[10]
+f41b <-dataMat$sortAudFile[11]
+f42  <-dataMat$sortAudFile[12]
+f43a <-dataMat$sortAudFile[13]
+f43b <-dataMat$sortAudFile[14]
+f44  <-dataMat$sortAudFile[15]
+
+df<-as_tibble(f34c[[1]][[1]][[1]])
+
+df = df %>% add_column(sound = 1)
+df = df %>% add_column(day = 0)
+
+tempF = f34c[[1]]
+
+
+for (i in c(2:39)) {
+  df = df %>% add_row(tibble(as_tibble(tempF[i][[1]][[1]]),sound = i,day = 0))
+                    }
+
+df$sound = factor(df$sound)
+
+dfDayZero <- df %>% select(V1:sound)
+
+testDF = dfDayZero %>% group_by(sound)
+
+```
+
+```{r,echo=T}
+
+testDF %>% summarise(n=n(),
+                     priemer = sum(V1:V34, na.rm = TRUE)
+                     )
+
+```
+
+```{r,echo=T}
+testDF.neurons <-  testDF %>% select(V1:V34)
+```
+
+
+## hierarchical clustering
+
+```{r,echo=T}
+
+dist_mat <- daisy(testDF)
+dist_mat <- dist(testDF,method = "euclidian")
+
+fviz_dist(dist_mat, gradient = list(low = "#00AFBB", mid = "white", high = "#FC4E07"))
+```
+
+```{r,echo=T}
+hclust_avg <- hclust(dist_mat, method = "average")
+
+
+## dendrogram: branches colored by 3 groups
+dend1 = as.dendrogram(hclust_avg)
+
+# color branches and labels by 3 clusters 
+dend1 = color_branches(dend1, k=2)
+dend1 = color_labels(dend1, k=2)
+# change label size
+dend1 = set(dend1, "labels_cex", 0.3) 
+plot(dend1, horiz=T, main = "Dendrogram colored by three clusters")
+cut_avg <- cutree(hclust_avg, k = 2)
+
+table(cut_avg, testDF$sound)
+
+```
+
+```{r,echo=T}
+
+scar = scale(testDF.neurons[, -c(1,2)], center=TRUE, scale=TRUE)
+km = kmeans(dist_mat, centers=2) 
+
+fviz_cluster(km, data = scar, geom = "point", stand = FALSE, frame.type = "norm")
+```
+
+testDF<- as.data.frame(scale(testDF %>% select(V1:V48)))
+
+
+
+
+```{r,echo=T}
+
+
+
+
+```

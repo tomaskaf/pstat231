@@ -1,0 +1,41 @@
+---
+title: "Homework Assignment"
+author: "Filip Tomaska"
+date: "`r format(Sys.Date(), '%B %d, %Y')`"
+output: html_document
+---
+
+
+```{r setup, echo=FALSE}
+library(knitr)
+# set global chunk options: images will be 7x5 inches
+knitr::opts_chunk$set(fig.width=7, fig.height=5)
+options(digits = 4)
+
+
+## indents are for indenting r code as formatted text
+## They may need to be adjusted depending on your OS
+# if your output looks odd, increase or decrease indent
+indent1 = '    '
+indent2 = '        '
+indent3 = '            '
+```
+
+
+1. Load the required libraries:
+    
+
+        
+```{r , echo=TRUE}
+library(tidyverse) 
+library(ISLR) 
+library(glmnet) 
+library(tree) 
+library(maptree) 
+library(randomForest) 
+library(gbm) 
+library(ROCR)
+```
+    * Estimator of mean absolute deviation (MAD):
+
+    
