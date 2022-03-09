@@ -43,20 +43,28 @@ df = df %>% add_column(day = 0)
 
 tempF = f34c[[1]]
 
-
-for (i in c(2:39)) {
-  df = df %>% add_row(tibble(as_tibble(tempF[i][[1]][[1]]),sound = i,day = 0))
-                    }
+for (j in c(1:8)){
+  for (i in c(2:39)) {
+   df = df %>% add_row(tibble(as_tibble(tempF[i][[1]][[j]]),sound = i,day = j-1))
+  }
+  }
+  
 
 df$sound = factor(df$sound)
+df$day = factor(df$day)
 
-dfDayZero <- df %>% select(V1:sound)
 
-testDF = dfDayZero %>% group_by(sound)
+
+df.Day <-  df%>% filter(df$day==0)
+
+
+df.neurons <-  df.Day%>% select(V1:V34)
+
+testDF = df %>% group_by(sound)
 
 ```
 
-```{r,echo=T}
+```{r,echo=T eval=FALSE, include=FALSE, r,echo=T}
 
 testDF %>% summarise(n=n(),
                      priemer = sum(V1:V34, na.rm = TRUE)
@@ -64,20 +72,17 @@ testDF %>% summarise(n=n(),
 
 ```
 
-```{r,echo=T}
-testDF.neurons <-  testDF %>% select(V1:V34)
-```
 
 
 ## hierarchical clustering
 
 ```{r,echo=T}
 
-dist_mat <- daisy(testDF)
-dist_mat <- dist(testDF,method = "euclidian")
+dist_mat <- dist(df.neurons,method = "euclidian")
 
 fviz_dist(dist_mat, gradient = list(low = "#00AFBB", mid = "white", high = "#FC4E07"))
 ```
+## looking at one day
 
 ```{r,echo=T}
 hclust_avg <- hclust(dist_mat, method = "average")
@@ -94,26 +99,76 @@ dend1 = set(dend1, "labels_cex", 0.3)
 plot(dend1, horiz=T, main = "Dendrogram colored by three clusters")
 cut_avg <- cutree(hclust_avg, k = 2)
 
-table(cut_avg, testDF$sound)
+table(cut_avg, df.Day$sound)
 
 ```
+## looking at all days through a loop one by one
+```{r,echo=T}
+table.accum <- matrix(, nrow=2,ncol=8)
+maxSecond <- matrix(, ncol=8)
+
+for (k in c(0:7)){
+  
+  df.Day <-  df%>% filter(df$day==k)
+
+
+df.neurons <-  df.Day%>% select(V1:V34)
+dist_mat <- dist(df.neurons,method = "euclidian")
+
+
+hclust_avg <- hclust(dist_mat, method = "average")
+cut_avg <- cutree(hclust_avg, k = 2)
+
+
+
+
+table.accum[,k+1] = table(cut_avg, df.Day$sound)[,34]
+maxSecond[k+1] = as.numeric(which.max(table(cut_avg, df.Day$sound)[2,]))
+
+}
+
+table.accum
+maxSecond
+```
+
+
+## looking at all days in one big dataset
+
 
 ```{r,echo=T}
 
-scar = scale(testDF.neurons[, -c(1,2)], center=TRUE, scale=TRUE)
-km = kmeans(dist_mat, centers=2) 
 
-fviz_cluster(km, data = scar, geom = "point", stand = FALSE, frame.type = "norm")
+
+df.neurons <-  df%>% select(V1:V34)
+dist_mat <- dist(df.neurons,method = "euclidian")
+#fviz_dist(dist_mat, gradient = list(low = "#00AFBB", mid = "white", high = "#FC4E07"))
+
+
+hclust_avg <- hclust(dist_mat, method = "complete")
+cut_avg <- cutree(hclust_avg, k = 2)
+
+## dendrogram: branches colored by 3 groups
+dend1 = as.dendrogram(hclust_avg)
+
+# color branches and labels by 3 clusters 
+dend1 = color_branches(dend1, k=2)
+dend1 = color_labels(dend1, k=2)
+# change label size
+dend1 = set(dend1, "labels_cex", 0.3) 
+plot(dend1, horiz=T, main = "Dendrogram colored by three clusters")
+cut_avg <- cutree(hclust_avg, k = 2)
+
+table(cut_avg, df$sound)
+
+
 ```
+##lets try PCA
 
-testDF<- as.data.frame(scale(testDF %>% select(V1:V48)))
+```{r, echo=T}
 
-
-
-
-```{r,echo=T}
+pca.neurons = prcomp(df.neurons, scale=TRUE)
 
 
-
-
+dim(pca.neurons$x)
+plot(pca.neurons$x)
 ```
