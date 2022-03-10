@@ -1,11 +1,28 @@
 ---
-title: "final"
-author: "Filip Tomaska"
-date: "08/02/2022"
-output: html_document
+title: "Final Project"
+author: "Filip Tomaska, Kelli Woodward"
+subtitle: PSTAT 131/231
+output:
+  html_document:
+    toc: yes
+    toc_float: yes
+    code_folding: hide
+    number_sections: yes
+  pdf_document:
+    toc: yes
 ---
 
-```{r , echo=T, warning=FALSE,error=F}
+
+#Abstract
+
+Neuronal activity can be recorded using various recording techniques. Optophysiology provides an option using genetically encoded fluorescent reporters, which generate optical readout of neuronal activity.
+
+
+# Introduction
+
+
+
+```{r library loading, error=F, message=FALSE, warning=FALSE, echo=T}
 library(R.matlab)
 library(readr)
 library(tidyverse)
@@ -13,11 +30,15 @@ library(data.table)
 library(cluster)
 library(dendextend)
 library(factoextra)
+library(ROCR)
 ```
+
+
+# Pre-processing
 
 ## Data loading
 
-```{r , echo=T, warning=FALSE,error=F,cache=T}
+```{r data import, error=F, warning=FALSE, echo=T, cache=TRUE}
 
 dataMat <- R.matlab::readMat("sortAudFile.mat",fixNames=T, ) 
 f19<-dataMat$sortAudFile[1]
@@ -44,7 +65,7 @@ df = df %>% add_column(day = 0)
 tempF = f34c[[1]]
 
 for (j in c(1:8)){
-  for (i in c(2:39)) {
+  for (i in c(1:39)) {
    df = df %>% add_row(tibble(as_tibble(tempF[i][[1]][[j]]),sound = i,day = j-1))
   }
   }
@@ -60,41 +81,49 @@ df.Day <-  df%>% filter(df$day==0)
 
 df.neurons <-  df.Day%>% select(V1:V34)
 
-testDF = df %>% group_by(sound)
+```
+
+
+# Exploratory
+
+```{r, echo=T}
+
+sumVect <- c(1:39)
+  
+for (i in c(1:39)) {
+  df.sound = NULL
+  df.sound <-  df%>% filter(df$sound==i)
+  
+  temp.df<- as.matrix(df.sound%>%select(V1:V34))
+
+  sumVect[i] = sum(colSums(temp.df))
+ 
+  sortSum = sort(sumVect, decreasing = TRUE)
+  
+  which(sumVect==(head(sortSum)[1]))
+   
+}
+
 
 ```
 
 
+
 ## hierarchical clustering
 
-```{r,echo=T}
+In order to
+
+
+```{r Hierachical clustering, echo=T, warning=FALSE}
 
 dist_mat <- dist(df.neurons,method = "euclidian")
 
 fviz_dist(dist_mat, gradient = list(low = "#00AFBB", mid = "white", high = "#FC4E07"))
 ```
-## looking at one day
-
-```{r,echo=T}
-hclust_avg <- hclust(dist_mat, method = "average")
-
-
-## dendrogram: branches colored by 3 groups
-dend1 = as.dendrogram(hclust_avg)
-
-# color branches and labels by 3 clusters 
-dend1 = color_branches(dend1, k=2)
-dend1 = color_labels(dend1, k=2)
-# change label size
-dend1 = set(dend1, "labels_cex", 0.3) 
-plot(dend1, horiz=T, main = "Dendrogram colored by three clusters")
-cut_avg <- cutree(hclust_avg, k = 2)
-
-table(cut_avg, df.Day$sound)
-
-```
 ## looking at all days through a loop one by one
-```{r,echo=T}
+
+```{r,echo=T, warning=FALSE}
+
 table.accum <- matrix(, nrow=2,ncol=8)
 maxSecond <- matrix(, ncol=8)
 
@@ -126,7 +155,7 @@ maxSecond
 ## looking at all days in one big dataset
 
 
-```{r,echo=T}
+```{r hclust with all days, warning=FALSE, echo=T}
 
 
 
@@ -214,7 +243,7 @@ table(cut_avg, df.Day$sound)
 ```
 
 
-##lets try PCA
+## lets try PCA
 
 ```{r, echo=T}
 
@@ -233,3 +262,67 @@ abline(v =min(which((cumsum(pve)>=0.9))))
 
 ```
 
+# Supervised learning
+
+## Add a Factor variable 
+
+```{r, include=FALSE}
+
+df = df %>%
+  mutate(s33=as.factor(ifelse(sound == "33", "Yes","No")))
+
+```
+
+```
+
+## Split
+
+```{r, include=FALSE}
+
+df <- df %>% mutate(id = row_number())
+#Check IDs
+head(df$id)
+#Create training set
+train <- df %>% sample_frac(.70)
+#Create test set
+test  <- anti_join(df, train, by = 'id')
+
+```
+
+
+## logistic regression
+
+```{r, echo=T}
+
+model.glm = glm(formula = sound~.-id, data=train, family = binomial)
+summary(model.glm)
+
+```
+
+```{r ,echo=T,message=FALSE,warning=FALSE}
+calc_error_rate <- function(predicted.value, true.value){
+  return(mean(true.value!=predicted.value)) }
+```
+
+```{r,echo=TRUE}
+
+prob.training = as.integer(predict(model.glm, type="response")>0.5)
+
+```
+
+```{r,echo=T,message=FALSE,warning=FALSE}
+trainError<- calc_error_rate(prob.training,train$sound)
+testError<- calc_error_rate(prob.training,test$sound)
+
+
+pred = prediction(prob.training, train$sound)
+perf = performance(pred, measure="tpr", x.measure="fpr")
+
+plot(perf, col=2, lwd=3, main="ROC curve")
+abline(0,1)
+
+auc = performance(pred, "auc")@y.values
+auc
+
+
+```
