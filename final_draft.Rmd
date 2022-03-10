@@ -64,15 +64,6 @@ testDF = df %>% group_by(sound)
 
 ```
 
-```{r,echo=T eval=FALSE, include=FALSE, r,echo=T}
-
-testDF %>% summarise(n=n(),
-                     priemer = sum(V1:V34, na.rm = TRUE)
-                     )
-
-```
-
-
 
 ## hierarchical clustering
 
@@ -162,13 +153,83 @@ table(cut_avg, df$sound)
 
 
 ```
+
+## Resampling to show data is not random
+
+```{r,echo=T}
+
+
+dataMat <- R.matlab::readMat("sortAudFile.mat",fixNames=T, ) 
+f19<-dataMat$sortAudFile[1]
+f33<-dataMat$sortAudFile[2]
+f34a<-dataMat$sortAudFile[3]
+f34b <-dataMat$sortAudFile[4]
+f34c <-dataMat$sortAudFile[5]
+f35  <-dataMat$sortAudFile[6]
+f37  <-dataMat$sortAudFile[7]
+f38 <-dataMat$sortAudFile[8]
+f40 <-dataMat$sortAudFile[9]
+f41a <-dataMat$sortAudFile[10]
+f41b <-dataMat$sortAudFile[11]
+f42  <-dataMat$sortAudFile[12]
+f43a <-dataMat$sortAudFile[13]
+f43b <-dataMat$sortAudFile[14]
+f44  <-dataMat$sortAudFile[15]
+
+df<-as_tibble(f34c[[1]][[1]][[1]])
+
+df = df %>% add_column(sound = 1)
+df = df %>% add_column(day = 0)
+
+tempF = f34c[[1]]
+
+for (j in c(1:8)){
+  for (i in c(2:39)) {
+    sound.random = sample(c(1:39),1)
+   df = df %>% add_row(tibble(as_tibble(tempF[i][[1]][[j]]), sound = sound.random, day = j-1))
+  }
+  }
+  
+
+df$sound = factor(df$sound)
+df$day = factor(df$day)
+
+
+
+df.Day <-  df%>% filter(df$day==0)
+
+
+df.neurons <-  df.Day%>% select(V1:V34)
+
+
+dist_mat <- dist(df.neurons,method = "euclidian")
+
+fviz_dist(dist_mat, gradient = list(low = "#00AFBB", mid = "white", high = "#FC4E07"))
+hclust_avg <- hclust(dist_mat, method = "complete")
+
+cut_avg <- cutree(hclust_avg, k = 2)
+
+table(cut_avg, df.Day$sound)
+
+```
+
+
 ##lets try PCA
 
 ```{r, echo=T}
 
 pca.neurons = prcomp(df.neurons, scale=TRUE)
 
+pr.var <- (pca.neurons$sdev)^2
+pve=pr.var/sum(pr.var)
 
-dim(pca.neurons$x)
-plot(pca.neurons$x)
+ plot(pve, xlab="Principal Component",
+     ylab="Proportion of Variance Explained ", ylim=c(0,1),type='b')
+ 
+  plot(cumsum(pve), xlab="Principal Component ",
+     ylab=" Cumulative Proportion of Variance Explained ", ylim=c(0,1), type='b')
+
+abline(v =min(which((cumsum(pve)>=0.9))))
+
 ```
+
