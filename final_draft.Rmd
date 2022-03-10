@@ -31,6 +31,7 @@ library(cluster)
 library(dendextend)
 library(factoextra)
 library(ROCR)
+library(boot)
 ```
 
 
@@ -273,9 +274,9 @@ df = df %>%
 
 ```
 
-```
 
 ## Split
+
 
 ```{r, include=FALSE}
 
@@ -294,7 +295,12 @@ test  <- anti_join(df, train, by = 'id')
 
 ```{r, echo=T}
 
-model.glm = glm(formula = sound~.-id, data=train, family = binomial)
+excl<-c('sound','day','id')
+train.cv <- train %>% select(., -excl)
+
+
+
+model.glm = glm(formula = s33~., data=train.cv, family = binomial)
 summary(model.glm)
 
 ```
@@ -306,16 +312,26 @@ calc_error_rate <- function(predicted.value, true.value){
 
 ```{r,echo=TRUE}
 
-prob.training = as.integer(predict(model.glm, type="response")>0.5)
+
+
+#as.factor(ifelse(sound == "33", "Yes","No")))
 
 ```
 
 ```{r,echo=T,message=FALSE,warning=FALSE}
-trainError<- calc_error_rate(prob.training,train$sound)
-testError<- calc_error_rate(prob.training,test$sound)
+
+prob.training = as.factor(ifelse(predict(model.glm, type="response")>0.5,"Yes","No"))
+
+trainError<- calc_error_rate(prob.training,train$s33)
+trainError
+testError<- calc_error_rate(prob.training,test$s33)
+testError
 
 
-pred = prediction(prob.training, train$sound)
+
+prob.training = NULL
+prob.training =predict(model.glm)
+pred = prediction(prob.training, train.cv$s33)
 perf = performance(pred, measure="tpr", x.measure="fpr")
 
 plot(perf, col=2, lwd=3, main="ROC curve")
@@ -324,5 +340,22 @@ abline(0,1)
 auc = performance(pred, "auc")@y.values
 auc
 
+```
 
+# Use a 10-fold cross-validation approach on the whole dat to estimate the test error rate*
+
+```{r, echo=T, warning=F}
+
+cost <- function(r, pi = 0) mean(abs(r-pi) > 0.5)
+
+
+excl<-c('sound','day','id')
+
+
+
+
+test.cv <- test %>% select(., -excl)
+
+model.glm.cv<-cv.glm(test.cv,model.glm,cost,10)
+model.glm.cv$delta
 ```
