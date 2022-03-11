@@ -32,6 +32,12 @@ library(dendextend)
 library(factoextra)
 library(ROCR)
 library(boot)
+library(caret)
+library(glmnet) 
+library(tree) 
+library(maptree) 
+library(randomForest) 
+library(gbm) 
 ```
 
 
@@ -340,6 +346,7 @@ abline(0,1)
 auc = performance(pred, "auc")@y.values
 auc
 
+
 ```
 
 # Use a 10-fold cross-validation approach on the whole dat to estimate the test error rate*
@@ -348,14 +355,52 @@ auc
 
 cost <- function(r, pi = 0) mean(abs(r-pi) > 0.5)
 
-
 excl<-c('sound','day','id')
-
-
-
 
 test.cv <- test %>% select(., -excl)
 
-model.glm.cv<-cv.glm(test.cv,model.glm,cost,10)
+model.glm.cv<-cv.glm(test.cv,model.glm,cost,100)
 model.glm.cv$delta
+
+```
+
+
+low number of positive cases in the dataset may cause seemingly good performance. We can look at how well it performs on specific labels using a confusion matrix.
+
+
+```{r,echo=T}
+#as.factor(ifelse(sound == "33", "Yes","No")))
+
+
+prob.training = as.factor(ifelse(predict(model.glm, type="response")>0.5,"Yes","No"))
+confusionMatrix(data = prob.training, reference = train.cv$s33)
+
+
+```
+
+
+```{r,echo=T}
+
+treeS33 <- tree(s33 ~ ., data=train.cv)
+summary(treeS33)
+```
+
+
+```{r,echo=T}
+cv <- cv.tree(treeS33, K=10, FUN = prune.misclass)
+best.cv = min(cv$size[cv$dev == min(cv$dev)])
+
+pt.cv = prune.misclass (treeS33, best=best.cv)
+#draw.tree(pt.cv,nodeinfo = T)
+#text(pt.cv, pretty=0, col = "blue", cex = .5)
+```
+
+```{r,echo=T}
+prob.training=NULL
+
+prob.training = predict(pt.cv, test.cv, type="class")
+
+
+confusionMatrix(data = prob.training, reference = test.cv$s33)
+```
 ```
