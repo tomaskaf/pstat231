@@ -93,7 +93,7 @@ df.neurons <-  df.Day%>% select(V1:V34)
 
 # Exploratory
 
-```{r, echo=T}
+```{r, echo=T, warning=FALSE}
 
 sumVect <- c(1:39)
   
@@ -286,28 +286,63 @@ df = df %>%
 
 ```{r, include=FALSE}
 
+#stratified
+
+
 df <- df %>% mutate(id = row_number())
 #Check IDs
 head(df$id)
+train.index <- createDataPartition(df$s33, p = .7, list = FALSE)
+
+
+
+#Create training set
+#train <- df %>% sample_frac(.70)
+train <- df[ train.index,]
+
+#Create test set
+test  <- anti_join(df, train, by = 'id')
+```
+
+
+```{r, include=FALSE}
+
+
+#nonstratified
+
+df <- df %>% mutate(id = row_number())
+#Check IDs
+head(df$id)
+
 #Create training set
 train <- df %>% sample_frac(.70)
 #Create test set
 test  <- anti_join(df, train, by = 'id')
+```
+
+```{r,echo=T}
+
+train.index <- createDataPartition(df$s33, p = .7, list = FALSE)
+train <- df[ train.index,]
+test  <- df[-train.index,]
+
 
 ```
+
 
 
 ## logistic regression
 
 ```{r, echo=T}
-
+#generate subdatasets of only activity data for learning purposes
 excl<-c('sound','day','id')
 train.cv <- train %>% select(., -excl)
+test.cv <- test %>% select(., -excl)
+```
 
-
-
+```{r, echo=T}
 model.glm = glm(formula = s33~., data=train.cv, family = binomial)
-summary(model.glm)
+#summary(model.glm)
 
 ```
 
@@ -325,26 +360,26 @@ calc_error_rate <- function(predicted.value, true.value){
 ```
 
 ```{r,echo=T,message=FALSE,warning=FALSE}
+prob.training.glm = NULL
+prob.training.glm = as.factor(ifelse(predict(model.glm, type="response")>0.5,"Yes","No"))
 
-prob.training = as.factor(ifelse(predict(model.glm, type="response")>0.5,"Yes","No"))
-
-trainError<- calc_error_rate(prob.training,train$s33)
+trainError<- calc_error_rate(prob.training.glm,train$s33)
 trainError
-testError<- calc_error_rate(prob.training,test$s33)
+testError<- calc_error_rate(prob.training.glm,test$s33)
 testError
 
 
 
-prob.training = NULL
-prob.training =predict(model.glm)
-pred = prediction(prob.training, train.cv$s33)
-perf = performance(pred, measure="tpr", x.measure="fpr")
+prob.training.glm = NULL
+prob.training.glm =predict(model.glm)
+pred.glm = prediction(prob.training.glm, train.cv$s33)
+perf.glm = performance(pred.glm, measure="tpr", x.measure="fpr")
 
-plot(perf, col=2, lwd=3, main="ROC curve")
+plot(perf.glm, col=2, lwd=3, main="ROC curve")
 abline(0,1)
 
-auc = performance(pred, "auc")@y.values
-auc
+auc.glm = performance(pred.glm, "auc")@y.values
+auc.glm
 
 
 ```
@@ -355,12 +390,11 @@ auc
 
 cost <- function(r, pi = 0) mean(abs(r-pi) > 0.5)
 
-excl<-c('sound','day','id')
 
-test.cv <- test %>% select(., -excl)
 
-model.glm.cv<-cv.glm(test.cv,model.glm,cost,100)
+model.glm.cv<-cv.glm(test.cv,model.glm,cost,10)
 model.glm.cv$delta
+
 
 ```
 
@@ -372,35 +406,106 @@ low number of positive cases in the dataset may cause seemingly good performance
 #as.factor(ifelse(sound == "33", "Yes","No")))
 
 
-prob.training = as.factor(ifelse(predict(model.glm, type="response")>0.5,"Yes","No"))
-confusionMatrix(data = prob.training, reference = train.cv$s33)
+prob.training.glm = as.factor(ifelse(predict(model.glm, type="response")>0.5,"Yes","No"))
+confusionMatrix(data = prob.training.glm, reference = train.cv$s33)
 
 
+```
+## Trees
+
+# Tree model
+
+```{r,echo=T}
+
+model.tree <- tree(s33 ~ ., data=train.cv)
+summary(model.tree)
 ```
 
 
 ```{r,echo=T}
-
-treeS33 <- tree(s33 ~ ., data=train.cv)
-summary(treeS33)
-```
-
-
-```{r,echo=T}
-cv <- cv.tree(treeS33, K=10, FUN = prune.misclass)
+cv <- cv.tree(model.tree, K=10, FUN = prune.misclass)
 best.cv = min(cv$size[cv$dev == min(cv$dev)])
 
-pt.cv = prune.misclass (treeS33, best=best.cv)
-#draw.tree(pt.cv,nodeinfo = T)
-#text(pt.cv, pretty=0, col = "blue", cex = .5)
+model.tree.cv = prune.misclass (model.tree, best=best.cv)
+draw.tree(model.tree.cv,nodeinfo = T)
+text(model.tree.cv, pretty=0, col = "blue", cex = .5)
 ```
 
 ```{r,echo=T}
 prob.training=NULL
 
-prob.training = predict(pt.cv, test.cv, type="class")
+prob.training.tree = predict(model.tree.cv, test.cv, type="class")
 
 
-confusionMatrix(data = prob.training, reference = test.cv$s33)
+confusionMatrix(data = prob.training.tree, reference = test.cv$s33)
 ```
+
+# Boosted trees to tackle the low number of positive cases to learn on
+
+
+```{r,echo=T,warning=F}
+
+set.seed(123)  # for reproducibility
+
+model.gbm <- gbm(ifelse(s33=="Yes",1,0) ~ ., data = train.cv,  n.trees = 10000, shrinkage = 0.01)
+
+prob.training.boost=NULL
+
+prob.training.boost = as.factor(ifelse(predict(model.gbm, test.cv, type="response")>0.5,"Yes","No"))
+
+confusionMatrix(data = prob.training.boost, reference = test.cv$s33)
 ```
+
+# Random forest
+
+``` {r, echo=T}
+
+model.rfor = randomForest(s33 ~ ., data = train.cv, ntree=500, strata=s33, importance=T)
+
+model.rfor
+
+
+#plot(model.rfor)
+#legend("top", colnames(model.rfor$err.rate),col=1:4,cex=0.8,fill=1:4)
+
+#model.rfor$importance
+
+```
+
+```{r,echo=T}
+
+
+
+prob.training.boost = as.factor(ifelse(predict(model.gbm, test.cv, type="response")>0.05,"Yes","No"))
+pred.boost = prediction(prob.training.boost, train.cv$s33)
+perf.boost = performance(pred.glm, measure="tpr", x.measure="fpr")
+
+plot(perf.boost, col=2, lwd=3, main="ROC curve")
+abline(0,1)
+
+auc.boost = performance(pred.boost, "auc")@y.values
+auc.boost
+
+
+
+
+plot(perfLog, col="red", lwd=3, main="ROC curve")
+abline(0,1)
+
+par(new=TRUE)
+
+plot(perfPruned, col="blue", lwd=3, main="ROC curve")
+abline(0,1)
+par(new=TRUE)
+plot(perfrFor, col="green", lwd=3, main="ROC curve")
+abline(0,1)
+par(new=TRUE)
+plot(perfBoost, col="yellow", lwd=3, main="ROC curve")
+abline(0,1)
+
+
+legend("right","top" ,legend=c("ROC Logistic","ROC Pruned", "ROC random Foresr", "ROC Boosted"),
+       col=c("red", "blue","green","yellow"),lty = 1)
+
+```
+
