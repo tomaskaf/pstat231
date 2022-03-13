@@ -288,24 +288,19 @@ df = df %>%
 
 #stratified
 
-
+set.seed(123)
 df <- df %>% mutate(id = row_number())
 #Check IDs
 head(df$id)
 train.index <- createDataPartition(df$s33, p = .7, list = FALSE)
 
-
-
-#Create training set
-#train <- df %>% sample_frac(.70)
 train <- df[ train.index,]
-
-#Create test set
-test  <- anti_join(df, train, by = 'id')
+test  <- df[-train.index,]
+length(which(test$s33=="Yes"))
 ```
 
 
-```{r, include=FALSE}
+```{r eval=FALSE, include=FALSE}
 
 
 #nonstratified
@@ -318,17 +313,8 @@ head(df$id)
 train <- df %>% sample_frac(.70)
 #Create test set
 test  <- anti_join(df, train, by = 'id')
+length(which(test$s33=="Yes"))
 ```
-
-```{r,echo=T}
-
-train.index <- createDataPartition(df$s33, p = .7, list = FALSE)
-train <- df[ train.index,]
-test  <- df[-train.index,]
-
-
-```
-
 
 
 ## logistic regression
@@ -411,6 +397,81 @@ confusionMatrix(data = prob.training.glm, reference = train.cv$s33)
 
 
 ```
+## Ridge
+
+```{r, echo=T}
+lambda.list.ridge = 1000 * exp(seq(0, log(1e-5), length = 100))
+
+train.neurons <- train.cv %>% select(V1:V34)
+train.labels <- as.factor(train.cv$s33)
+
+
+model.ridge=glmnet(train.neurons,train.labels,alpha=0,lambda=lambda.list.ridge,type.measure ='class', family = "binomial")
+
+
+set.seed(1)
+model.ridge.cv=cv.glmnet(as.matrix(train.neurons),train.labels, alpha = 0,nfolds = 5, lambda = lambda.list.ridge, family="binomial") 
+lambdaSelect <- model.ridge.cv$lambda.min
+plot(model.ridge.cv)
+abline(v = log(lambdaSelect))
+
+```
+training MSE for the model corresponding to the optimal value of 'lambda' selected by the cross-validation above?
+```{r, echo=T}
+    
+    model.ridge.cv$cvm[which (lambda.list.ridge==lambdaSelect)]
+
+```
+test MSE
+
+```{r, echo=T}
+
+pred.ridge=predict(model.ridge,s=lambdaSelect, newx = test.neurons, type="class") 
+#mean((pred.ridge-test.labels)^2)
+
+
+
+#pred.ridge <- predict.cv.glmnet(mymodel, newx = trainingdf, 
+ #                        s = 'lambda.min', type = 'class')
+
+confusionMatrix(data =as_factor(pred.ridge), reference = test.cv$s33) 
+```
+
+# Lasso
+
+```{r, echo=T}
+lambdaSelect = NULL
+
+lambda.list.lasso = 1000 * exp(seq(0, log(1e-5), length = 100))
+
+train.neurons <- train.cv %>% select(V1:V34)
+train.labels <- as.factor(train.cv$s33)
+test.neurons <- train.cv %>% select(V1:V34)
+
+model.lasso=glmnet(train.neurons,train.labels,alpha=1,lambda=lambda.list.lasso,type.measure ='class', family = "binomial")
+
+
+set.seed(1)
+model.lasso.cv=cv.glmnet(as.matrix(train.neurons),train.labels, alpha = 1,nfolds = 10, lambda = lambda.list.lasso, family="binomial") 
+lambdaSelect <- model.lasso.cv$lambda.min
+plot(model.lasso.cv)
+abline(v = log(lambdaSelect))
+model.lasso.cv$cvm[which (lambda.list.ridge==lambdaSelect)]
+
+```
+```{r, echo=T}
+pred.lasso=predict(model.lasso.cv,s=lambdaSelect, newx = test.neurons, type="class") 
+#mean((pred.ridge-test.labels)^2)
+
+
+
+#pred.ridge <- predict.cv.glmnet(mymodel, newx = trainingdf, 
+ #                        s = 'lambda.min', type = 'class')
+
+confusionMatrix(data =as_factor(pred.lasso), reference = test.cv$s33) 
+
+```
+
 ## Trees
 
 # Tree model
