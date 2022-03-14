@@ -23,13 +23,11 @@ This project is a part of the PSTAT 231 course (instructed by dr. Katie Coburn [
 
 # Introduction
 
-## Theoretical rationale
-
 Brain tissue is organized into functionally and anatomically distinct regions. These specialized areas often perform very specific tasks such as handling of sensory information, calculate appropriate motor commands and many others. However, traditionally, the only detectable output other than the behavioral or physiological change itself is the variation in electrical properties of single neurons residing at the given site. The link between neuronal activity and its global effect is still very poorly understood. Since it is key to the understanding of how the information is coded and processed, it is subject to intense research. 
 
-The classical approach towards studying brain areas handling sensory information is based on observing responses of single neurons to various changing parameters (Theunissen and Elie 2014). The collected data is subsequently translatable into neuron-specific receptive fields (RFs), study of which has revealed tonal organization of neurons both in the lower parts of the auditory pathway (mouse dorsal inferior colliculus (Barnstedt et al. 2015)) and in the auditory cortex (Issa et al. 2014)). The available data might suggest that the processing of the auditory input is dependent on single neurons encoding the perception of the input component that provokes them to maximal activity (Fregnac and Bathellier 2015). Furthermore, this hypothesis is in accord with the "neuronal doctrine" (Barlow 1972), which suggests such coding in other parts of the brain as well.
+The classical approach towards studying brain areas handling sensory information is based on observing responses of single neurons to various changing parameters [@theunissen2014] . The collected data is subsequently translatable into neuron-specific receptive fields (RFs), study of which has revealed tonal organization of neurons both in the lower parts of the auditory pathway (mouse dorsal inferior colliculus [@barnstedt2015] and in the auditory cortex [@issa2014]. The available data might suggest that the processing of the auditory input is dependent on single neurons encoding the perception of the input component that provokes them to maximal activity[@frégnac2015]. Furthermore, this hypothesis is in accord with the "neuronal doctrine" [@barlow1972], which suggests such coding in other parts of the brain as well.
 
-Although such linear coding of single input components is supported by data from lower levels of the auditory pathway (Andoni, Li and Pollak 2007), neurons from higher levels express significant non-linearity in their response patterns (Nelken 2004, Bathellier, Ushakova and Rumpel 2012, Deneux et al. 2016). For example, certain neurons specifically respond to unique physical attributes of natural sounds rather than being strictly frequency-tuned (Theunissen and Elie 2014). These non-linear responses are context-dependent (Kato, Gillet and Isaacson 2015), thus oppose the classic, exclusively feed-forward model and require the inclusion of input from local neuronal populations. 
+Although such linear coding of single input components is supported by data from lower levels of the auditory pathway [@andoni2007\], neurons from higher levels express significant non-linearity in their response patterns \[@bathellier2012; @nelken2004; @deneux2016] (. For example, certain neurons specifically respond to unique physical attributes of natural sounds rather than being strictly frequency-tuned [@theunissen2014]. These non-linear responses are context-dependent [@kato2015], thus oppose the classic, exclusively feed-forward model and require the inclusion of input from local neuronal populations. 
 
 In the light of growing evidence, it became apparent that the application of the classical receptive field concept in the auditory cortex should be revisited and possible alternatives need to be investigated. Another important factor was the appearance of novel techniques capable of recording large genetically defined neural populations,which has enabled in vivo testing of alternative models (namely two-photon imaging of genetically encoded calcium indicators (Lutcke and Helmchen 2011, Chen et al. 2013)). Unlike the classical electrophysiological approach, these are not limited to recordings of a small number of neurons, a limitation having strongly shaped the direction of scientific effort in the past.
 
@@ -40,9 +38,11 @@ The activity of local cortical networks (of span \~200 µm) was discovered to be
 
 In summary, the investigation of discrete network dynamics and categorization in the mouse auditory cortex by Bathellier et al. (Bathellier et al. 2012) has produced a significant amount of useful information. Among these is evidence supporting the idea that it is not single neurons but hundreds of cells, which form a functional unit in the neocortex (Averbeck, Latham and Pouget 2006). Moreover, it was shown that single subnetworks are comprised of a redundant number of cells and are non-discretely divided, possibly to counter the high overall noise. However, most importantly, it was shown that different response modes (of a local neuronal network) recorded by calcium imaging reflect the categorization of sounds observed also behaviorally, thus suggesting that the attractor final states may be directly representing the perceptual category. 
 
-\
-\
-\
+## Materials and Methods
+
+## Library loading
+
+First, we load all of the required libraries
 
 ```{r library loading, error=F, message=FALSE, warning=FALSE, echo=T}
 library(R.matlab)
@@ -210,9 +210,35 @@ table.accum[,k+1] = table(cut_avg, df.Day$sound)[,33]
 maxSecond[k+1] = as.numeric(which.max(table(cut_avg, df.Day$sound)[2,]))
 
 }
+```
 
+**Below are the IDs of the stimuli that were most abundantly clustered into the second mode within each of the 8 sessions**
+
+```{r max second, echo=T}
 #Display the counts of 
 maxSecond
+```
+
+#### An example dendrogram produced by hierarchical clustering during Day Zero
+
+```{r dendrogram,echo=T}
+
+df.Day <-  df%>% filter(df$day==0)
+df.neurons <-  df.Day%>% select(V1:V34)
+dist_mat <- dist(df.neurons,method = "euclidian")
+hclust_avg <- hclust(dist_mat, method = "average")
+
+## dendrogram: branches colored by 2 groups
+dend1 = as.dendrogram(hclust_avg)
+# color branches and labels by 2 clusters 
+dend1 = color_branches(dend1, k=2)
+dend1 = color_labels(dend1, k=2)
+# change label size
+dend1 = set(dend1, "labels_cex", 0.3)
+
+
+plot(dend1,horiz=T, main = "Dendrogram colored by two clusters")
+
 ```
 
 #### Conclusion:
@@ -290,7 +316,11 @@ table.accum[,k+1] = table(cut_avg, df.Day$sound)[,33]
 maxSecond[k+1] = as.numeric(which.max(table(cut_avg, df.Day$sound)[2,]))
 
 }
+```
 
+**Below are the IDs of stimuli that were most abundantly clustered into the second mode within each of the 8 sessions while the sound identity was scrambled**
+
+```{r resampled max second, echo=TRUE}
 #Display the counts of 
 #table.accum
 maxSecond
@@ -449,7 +479,7 @@ abline(0,1)
 
 ```
 
-####  Computing AUC
+#### Computing AUC
 
 ```{r auc glm}
 
@@ -657,3 +687,5 @@ pred.svm = predict(model.svm, newdata = test.cv)
 
 confusionMatrix(data = pred.svm, reference = test.cv$s33)
 ```
+
+# References
