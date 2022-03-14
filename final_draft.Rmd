@@ -10,17 +10,18 @@ output:
     number_sections: yes
   pdf_document:
     toc: yes
+bibliography: references.bib
 ---
 
-
-#Abstract
+# Abstract
 
 Neuronal activity can be recorded using various recording techniques. Optophysiology provides an option using genetically encoded fluorescent reporters, which generate optical readout of neuronal activity.
 
-
 # Introduction
 
+## Theoretical rationale
 
+The classical view of the auditory cortex as a set of linear filter units has been, among else, motivated by its tonotopic organization. Single neurons were regarded as linear filters with receptive fields constructed by using artificial single modality changes. However, advancements enabling recordings of large local populations resulted in data suggesting the original hypothesis might have been seriously influenced by the nature of the experiments. Models based on linear receptive fields of single cells in response to largely artificial simple sounds have failed to predict responses of these cells to more complex stimuli. Based on the analysis of population responses to simple and complex stimuli, it has been proposed the computations at the level of the auditory cortex are based on perceptual categories exhibiting attractor-like dynamics. Abstract auditory objects represent a robust coding strategy more in line with the large nonlinearities observed when comparing single cell responses based on receptive fields with natural stimuli such as vocalizations. Arguably, features of a basic coding strategy should include a reasonable degree of stability in time. While the notion of single filter units organized into maps has been supported by longitudinal studies, the temporal stability of patterns representing perceptual categories has not yet been thoroughly investigated. Previous reports have suggested that population responses exhibiting inter-trial stability within a single session of an acute experiment are behaviorally relevant. We aim to test whether the degree of stability of activity patterns over 30 days is comparable to that observed within a single session
 
 ```{r library loading, error=F, message=FALSE, warning=FALSE, echo=T}
 library(R.matlab)
@@ -40,10 +41,11 @@ library(randomForest)
 library(gbm) 
 ```
 
-
 # Pre-processing
 
 ## Data loading
+
+Some of the functional analysis had to be performed in MATLAB since the Two Photon Processor [@tomek2013] , the framework used for raw fluorescence trace analysis, does not exist outside MATLAB. Consequently, data in the form of a MATLAB structured list is imported and transformed into a tibble dataframe
 
 ```{r data import, error=F, warning=FALSE, echo=T, cache=TRUE}
 
@@ -77,19 +79,11 @@ for (j in c(1:8)){
   }
   }
   
-
 df$sound = factor(df$sound)
 df$day = factor(df$day)
-
-
-
 df.Day <-  df%>% filter(df$day==0)
-
-
 df.neurons <-  df.Day%>% select(V1:V34)
-
 ```
-
 
 # Exploratory
 
@@ -110,26 +104,64 @@ for (i in c(1:39)) {
   which(sumVect==(head(sortSum)[1]))
    
 }
-
-
 ```
-
-
 
 ## hierarchical clustering
 
-In order to
+The hypothesis proposed by the work inspiring these experiments postulates that local neuronal populations represent sensory precepts by categorizing them into a small number of perceptual categories \[@bathellier2012\]. Since our aim was to reproduce these results using tools enabling long-term imaging, we first try to identify sounds producing a recognizable activity pattern.
 
+In order to do this, we employ an unsupervised learning method, **hierarchical clustering**.
 
-```{r Hierachical clustering, echo=T, warning=FALSE}
+We perform this on a data subset from the first day of recordings, since that is when fields of view were selected for long term studies by performing clustering online during imaging.
 
+### Randomized sampling
+
+In order to assess the relevance of hierarchical clustering performed on our data, we first try to analyze a randomized dataset.
+
+Finding clusters of similar activity patterns within a **randomized** (random sampling of sounds with replacement)dataset, might indicate that any clusters we observe in the actual data might be, in fact, an artifact arising from the nature of the data.
+
+## Resampling to show data is not random
+
+```{r,echo=T}
+#reloading data
+
+f34c = NULL
+df = NULL
+dataMat = NULL
+
+dataMat <- R.matlab::readMat("sortAudFile.mat",fixNames=T, ) 
+f34c <-dataMat$sortAudFile[5]
+df<-as_tibble(f34c[[1]][[1]][[1]])
+
+df = df %>% add_column(sound = 1)
+df = df %>% add_column(day = 0)
+tempF = f34c[[1]]
+
+#random sampling, scrambling sound identity, with replacement
+
+set.seed(123)
+
+for (j in c(1:8)){
+  for (i in c(2:39)) {
+    sound.random = sample(c(1:39),1)
+   df = df %>% add_row(tibble(as_tibble(tempF[i][[1]][[j]]), sound = sound.random, day = j-1))
+  }
+  }
+  
+df$sound = factor(df$sound)
+df$day = factor(df$day)
+df.Day <-  df%>% filter(df$day==0)
+df.neurons <-  df.Day%>% select(V1:V34)
+
+#clustering
 dist_mat <- dist(df.neurons,method = "euclidian")
-
-fviz_dist(dist_mat, gradient = list(low = "#00AFBB", mid = "white", high = "#FC4E07"))
+hclust_avg <- hclust(dist_mat, method = "complete")
+cut_avg <- cutree(hclust_avg, k = 2)
+table(cut_avg, df.Day$sound)
 ```
-## looking at all days through a loop one by one
 
-```{r,echo=T, warning=FALSE}
+```{r,echo=T}
+
 
 table.accum <- matrix(, nrow=2,ncol=8)
 maxSecond <- matrix(, ncol=8)
@@ -147,70 +179,28 @@ hclust_avg <- hclust(dist_mat, method = "average")
 cut_avg <- cutree(hclust_avg, k = 2)
 
 
-
-
-table.accum[,k+1] = table(cut_avg, df.Day$sound)[,34]
+table.accum[,k+1] = table(cut_avg, df.Day$sound)[,33]
 maxSecond[k+1] = as.numeric(which.max(table(cut_avg, df.Day$sound)[2,]))
 
 }
 
+#Display the counts of 
 table.accum
 maxSecond
 ```
 
+We can observe
 
-## looking at all days in one big dataset
+```{r, error=F, warning=FALSE, echo=T, cache=TRUE}
 
+#reloading data again for proper clustering
 
-```{r hclust with all days, warning=FALSE, echo=T}
-
-
-
-df.neurons <-  df%>% select(V1:V34)
-dist_mat <- dist(df.neurons,method = "euclidian")
-#fviz_dist(dist_mat, gradient = list(low = "#00AFBB", mid = "white", high = "#FC4E07"))
-
-
-hclust_avg <- hclust(dist_mat, method = "complete")
-cut_avg <- cutree(hclust_avg, k = 2)
-
-## dendrogram: branches colored by 3 groups
-dend1 = as.dendrogram(hclust_avg)
-
-# color branches and labels by 3 clusters 
-dend1 = color_branches(dend1, k=2)
-dend1 = color_labels(dend1, k=2)
-# change label size
-dend1 = set(dend1, "labels_cex", 0.3) 
-plot(dend1, horiz=T, main = "Dendrogram colored by three clusters")
-cut_avg <- cutree(hclust_avg, k = 2)
-
-table(cut_avg, df$sound)
-
-
-```
-
-## Resampling to show data is not random
-
-```{r,echo=T}
+f34c = NULL
+df = NULL
 
 
 dataMat <- R.matlab::readMat("sortAudFile.mat",fixNames=T, ) 
-f19<-dataMat$sortAudFile[1]
-f33<-dataMat$sortAudFile[2]
-f34a<-dataMat$sortAudFile[3]
-f34b <-dataMat$sortAudFile[4]
 f34c <-dataMat$sortAudFile[5]
-f35  <-dataMat$sortAudFile[6]
-f37  <-dataMat$sortAudFile[7]
-f38 <-dataMat$sortAudFile[8]
-f40 <-dataMat$sortAudFile[9]
-f41a <-dataMat$sortAudFile[10]
-f41b <-dataMat$sortAudFile[11]
-f42  <-dataMat$sortAudFile[12]
-f43a <-dataMat$sortAudFile[13]
-f43b <-dataMat$sortAudFile[14]
-f44  <-dataMat$sortAudFile[15]
 
 df<-as_tibble(f34c[[1]][[1]][[1]])
 
@@ -220,41 +210,60 @@ df = df %>% add_column(day = 0)
 tempF = f34c[[1]]
 
 for (j in c(1:8)){
-  for (i in c(2:39)) {
-    sound.random = sample(c(1:39),1)
-   df = df %>% add_row(tibble(as_tibble(tempF[i][[1]][[j]]), sound = sound.random, day = j-1))
+  for (i in c(1:39)) {
+   df = df %>% add_row(tibble(as_tibble(tempF[i][[1]][[j]]),sound = i,day = j-1))
   }
   }
   
-
 df$sound = factor(df$sound)
 df$day = factor(df$day)
-
-
-
 df.Day <-  df%>% filter(df$day==0)
-
-
 df.neurons <-  df.Day%>% select(V1:V34)
-
-
-dist_mat <- dist(df.neurons,method = "euclidian")
-
-fviz_dist(dist_mat, gradient = list(low = "#00AFBB", mid = "white", high = "#FC4E07"))
-hclust_avg <- hclust(dist_mat, method = "complete")
-
-cut_avg <- cutree(hclust_avg, k = 2)
-
-table(cut_avg, df.Day$sound)
 
 ```
 
+### Looking at data day by day to determine which sound gets clustered in the second cluster the most
 
-## lets try PCA
+```{r,echo=T}
+
+
+table.accum <- matrix(, nrow=2,ncol=8)
+maxSecond <- matrix(, ncol=8)
+
+for (k in c(0:7)){
+  
+  df.Day <-  df%>% filter(df$day==k)
+
+
+df.neurons <-  df.Day%>% select(V1:V34)
+dist_mat <- dist(df.neurons,method = "euclidian")
+
+
+hclust_avg <- hclust(dist_mat, method = "average")
+cut_avg <- cutree(hclust_avg, k = 2)
+
+
+table.accum[,k+1] = table(cut_avg, df.Day$sound)[,33]
+maxSecond[k+1] = as.numeric(which.max(table(cut_avg, df.Day$sound)[2,]))
+
+}
+
+#Display the counts of 
+table.accum
+maxSecond
+```
+
+#### Conclusion
+
+The identities of sounds and their distribution are different in a randomized sample, thus our recordings are likely not an artifact.
+
+## PCA analysis
+
+In order to assess correlations between variables (neurons #1 to #38) we perform *principal component analysis*.
 
 ```{r, echo=T}
 
-pca.neurons = prcomp(df.neurons, scale=TRUE)
+pca.neurons = prcomp(df.neurons, scale=TRUE, center = TRUE)
 
 pr.var <- (pca.neurons$sdev)^2
 pve=pr.var/sum(pr.var)
@@ -269,9 +278,15 @@ abline(v =min(which((cumsum(pve)>=0.9))))
 
 ```
 
+#### Conclusion PCA
+
+We observe that in order to explain 90% of total variation in the data, we need at least **27** principal components. The high number of components suggests we indeed do need all of our variables in order to capture the variance, thus we should use all of them in our future analysis
+
 # Supervised learning
 
-## Add a Factor variable 
+## Data preparation
+
+First, we need to define a factor variable defining whether the observation was obtained as a response to the examined sound. Based on the hierarchical clustering performed earlier, this sound is sound **33**,
 
 ```{r, include=FALSE}
 
@@ -280,9 +295,9 @@ df = df %>%
 
 ```
 
+#### Split
 
-## Split
-
+Since only one sound is considered a positive case, our data contains a small fraction of positive cases for learning and training purposes. For that reason, it is important to perform stratified sampling, so that the limited number of positive labels is evenly split between training and testing data chunks,
 
 ```{r, include=FALSE}
 
@@ -299,25 +314,9 @@ test  <- df[-train.index,]
 length(which(test$s33=="Yes"))
 ```
 
+## Model fitting
 
-```{r eval=FALSE, include=FALSE}
-
-
-#nonstratified
-
-df <- df %>% mutate(id = row_number())
-#Check IDs
-head(df$id)
-
-#Create training set
-train <- df %>% sample_frac(.70)
-#Create test set
-test  <- anti_join(df, train, by = 'id')
-length(which(test$s33=="Yes"))
-```
-
-
-## logistic regression
+### logistic regression
 
 ```{r, echo=T}
 #generate subdatasets of only activity data for learning purposes
@@ -335,14 +334,6 @@ model.glm = glm(formula = s33~., data=train.cv, family = binomial)
 ```{r ,echo=T,message=FALSE,warning=FALSE}
 calc_error_rate <- function(predicted.value, true.value){
   return(mean(true.value!=predicted.value)) }
-```
-
-```{r,echo=TRUE}
-
-
-
-#as.factor(ifelse(sound == "33", "Yes","No")))
-
 ```
 
 ```{r,echo=T,message=FALSE,warning=FALSE}
@@ -370,7 +361,7 @@ auc.glm
 
 ```
 
-# Use a 10-fold cross-validation approach on the whole dat to estimate the test error rate*
+# Use a 10-fold cross-validation approach on the whole dat to estimate the test error rate\*
 
 ```{r, echo=T, warning=F}
 
@@ -384,9 +375,7 @@ model.glm.cv$delta
 
 ```
 
-
 low number of positive cases in the dataset may cause seemingly good performance. We can look at how well it performs on specific labels using a confusion matrix.
-
 
 ```{r,echo=T}
 #as.factor(ifelse(sound == "33", "Yes","No")))
@@ -397,7 +386,8 @@ confusionMatrix(data = prob.training.glm, reference = train.cv$s33)
 
 
 ```
-## Ridge
+
+### Ridge
 
 ```{r, echo=T}
 lambda.list.ridge = 1000 * exp(seq(0, log(1e-5), length = 100))
@@ -416,12 +406,15 @@ plot(model.ridge.cv)
 abline(v = log(lambdaSelect))
 
 ```
+
 training MSE for the model corresponding to the optimal value of 'lambda' selected by the cross-validation above?
+
 ```{r, echo=T}
     
     model.ridge.cv$cvm[which (lambda.list.ridge==lambdaSelect)]
 
 ```
+
 test MSE
 
 ```{r, echo=T}
@@ -437,7 +430,7 @@ pred.ridge=predict(model.ridge,s=lambdaSelect, newx = test.neurons, type="class"
 confusionMatrix(data =as_factor(pred.ridge), reference = test.cv$s33) 
 ```
 
-# Lasso
+### Lasso
 
 ```{r, echo=T}
 lambdaSelect = NULL
@@ -459,6 +452,7 @@ abline(v = log(lambdaSelect))
 model.lasso.cv$cvm[which (lambda.list.ridge==lambdaSelect)]
 
 ```
+
 ```{r, echo=T}
 pred.lasso=predict(model.lasso.cv,s=lambdaSelect, newx = test.neurons, type="class") 
 #mean((pred.ridge-test.labels)^2)
@@ -482,7 +476,6 @@ model.tree <- tree(s33 ~ ., data=train.cv)
 summary(model.tree)
 ```
 
-
 ```{r,echo=T}
 cv <- cv.tree(model.tree, K=10, FUN = prune.misclass)
 best.cv = min(cv$size[cv$dev == min(cv$dev)])
@@ -503,7 +496,6 @@ confusionMatrix(data = prob.training.tree, reference = test.cv$s33)
 
 # Boosted trees to tackle the low number of positive cases to learn on
 
-
 ```{r,echo=T,warning=F}
 
 set.seed(123)  # for reproducibility
@@ -519,7 +511,7 @@ confusionMatrix(data = prob.training.boost, reference = test.cv$s33)
 
 # Random forest
 
-``` {r, echo=T}
+```{r, echo=T}
 
 model.rfor = randomForest(s33 ~ ., data = train.cv, ntree=500, strata=s33, importance=T)
 
@@ -569,4 +561,3 @@ legend("right","top" ,legend=c("ROC Logistic","ROC Pruned", "ROC random Foresr",
        col=c("red", "blue","green","yellow"),lty = 1)
 
 ```
-
