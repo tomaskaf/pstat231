@@ -15,6 +15,12 @@ bibliography: references.bib
 
 # Abstract
 
+The deciphering of the neural code is one of the last grand mysteries of physiology. Using methods such as calcium imaging or electrophysiology to record activity of genetically defined neurons, researchers around the globe hope to gain critical insight into how information is coded and processed by the nervous system.
+
+The aim of this project is to apply techniques of statistical machine learning to real-world neuronal activity data and help describe how sensory stimuli are represented in the murine auditory cortex.
+
+This project is a part of the PSTAT 231 course (instructed by dr. Katie Coburn [@d]). Since the overall objective of this project is to learn how to use the tools we were presented during class, we will try to fit as many models as possible.
+
 # Introduction
 
 ## Theoretical rationale
@@ -55,7 +61,6 @@ library(maptree)
 library(randomForest) 
 library(gbm) 
 library(e1071)
-library(SparseM)
 ```
 
 # Pre-processing
@@ -104,7 +109,9 @@ df.neurons <-  df.Day%>% select(V1:V34)
 
 # Exploratory
 
-```{r, echo=T, warning=FALSE}
+To be supplied by Katti
+
+```{r eval=FALSE, warning=FALSE, include=FALSE}
 
 sumVect <- c(1:39)
   
@@ -123,7 +130,7 @@ for (i in c(1:39)) {
 }
 ```
 
-## hierarchical clustering
+## Hierarchical clustering
 
 The hypothesis proposed by the work inspiring these experiments postulates that local neuronal populations represent sensory precepts by categorizing them into a small number of perceptual categories [@bathellier2012] Since our aim was to reproduce these results using tools enabling long-term imaging, we first try to identify sounds producing a recognizable activity pattern.
 
@@ -131,82 +138,17 @@ In order to do this, we employ an unsupervised learning method, **hierarchical c
 
 We perform this on a data subset from the first day of recordings, since that is when fields of view were selected for long term studies by performing clustering online during imaging.
 
-### Randomized sampling
+### Search for the sound of interest
 
-In order to assess the relevance of hierarchical clustering performed on our data, we first try to analyze a randomized dataset.
+First, we will loop through all of the days performing hierarchical clustering on the dataset. The reason why we chose this approach is the following:
 
-Finding clusters of similar activity patterns within a **randomized** (random sampling of sounds with replacement)dataset, might indicate that any clusters we observe in the actual data might be, in fact, an artifact arising from the nature of the data.
+-   Each day, the neuronal population had to be revisited and relabeled, which may introduce added variability and be regarded as different conditions.
 
-## Resampling to show data is not random
+-   Previously published work only tested stability within one imaging session so that is what we expect to see
 
-```{r,echo=T}
-#reloading data
+#### Data reloading
 
-f34c = NULL
-df = NULL
-dataMat = NULL
-
-dataMat <- R.matlab::readMat("sortAudFile.mat",fixNames=T, ) 
-f34c <-dataMat$sortAudFile[5]
-df<-as_tibble(f34c[[1]][[1]][[1]])
-
-df = df %>% add_column(sound = 1)
-df = df %>% add_column(day = 0)
-tempF = f34c[[1]]
-
-#random sampling, scrambling sound identity, with replacement
-
-set.seed(123)
-
-for (j in c(1:8)){
-  for (i in c(2:39)) {
-    sound.random = sample(c(1:39),1)
-   df = df %>% add_row(tibble(as_tibble(tempF[i][[1]][[j]]), sound = sound.random, day = j-1))
-  }
-  }
-  
-df$sound = factor(df$sound)
-df$day = factor(df$day)
-df.Day <-  df%>% filter(df$day==0)
-df.neurons <-  df.Day%>% select(V1:V34)
-
-#clustering
-dist_mat <- dist(df.neurons,method = "euclidian")
-hclust_avg <- hclust(dist_mat, method = "complete")
-cut_avg <- cutree(hclust_avg, k = 2)
-table(cut_avg, df.Day$sound)
-```
-
-```{r,echo=T}
-
-
-table.accum <- matrix(, nrow=2,ncol=8)
-maxSecond <- matrix(, ncol=8)
-
-for (k in c(0:7)){
-  
-  df.Day <-  df%>% filter(df$day==k)
-
-
-df.neurons <-  df.Day%>% select(V1:V34)
-dist_mat <- dist(df.neurons,method = "euclidian")
-
-
-hclust_avg <- hclust(dist_mat, method = "average")
-cut_avg <- cutree(hclust_avg, k = 2)
-
-
-table.accum[,k+1] = table(cut_avg, df.Day$sound)[,33]
-maxSecond[k+1] = as.numeric(which.max(table(cut_avg, df.Day$sound)[2,]))
-
-}
-
-#Display the counts of 
-table.accum
-maxSecond
-```
-
-We can observe
+Repeated data reloading as a precautionary step in case some prior manipulation was introduced and not corrected.
 
 ```{r, error=F, warning=FALSE, echo=T, cache=TRUE}
 
@@ -214,7 +156,7 @@ We can observe
 
 f34c = NULL
 df = NULL
-
+dataMat = NULL
 
 dataMat <- R.matlab::readMat("sortAudFile.mat",fixNames=T, ) 
 f34c <-dataMat$sortAudFile[5]
@@ -239,9 +181,13 @@ df.neurons <-  df.Day%>% select(V1:V34)
 
 ```
 
-### Looking at data day by day to determine which sound gets clustered in the second cluster the most
+#### Hierarchical clustering of activity patterns in response to a battery of 39 sounds
 
-```{r,echo=T}
+We loop through all of the imaging sessions (day 0, +1, +5, +10, +15, +20, +25 and +30) and perform hierarchical clustering of response patterns within each day. Finally, we look at which sound was clustered into the second cluster the most.
+
+We limit the number of clusters to 2 as we do not expect to see more than 2 modes of response. One being no response, the other being an activity pattern elicited by one or a small number of stimuli.
+
+```{r hclust,echo=T}
 
 
 table.accum <- matrix(, nrow=2,ncol=8)
@@ -269,25 +215,141 @@ maxSecond[k+1] = as.numeric(which.max(table(cut_avg, df.Day$sound)[2,]))
 maxSecond
 ```
 
+#### Conclusion:
+
+Sound number **33** is the most abundant sound eliciting a response pattern falling into cluster 2.
+
+### Randomized sampling
+
+In order to assess the relevance of hierarchical clustering performed on our data, we next try to analyze a randomized dataset.
+
+Finding clusters of similar activity patterns within a **randomized** (random sampling of sounds with replacement)dataset, might indicate that any clusters we observe in the actual data might be, in fact, an artifact arising from the nature of the data.
+
+#### Scrambling sound identities with replacement
+
+```{r hclust randomized, echo=T}
+
+#reloading data
+
+f34c = NULL
+df = NULL
+dataMat = NULL
+
+dataMat <- R.matlab::readMat("sortAudFile.mat",fixNames=T, ) 
+f34c <-dataMat$sortAudFile[5]
+df<-as_tibble(f34c[[1]][[1]][[1]])
+
+df = df %>% add_column(sound = 1)
+df = df %>% add_column(day = 0)
+tempF = f34c[[1]]
+
+#random sampling, scrambling sound identity, with replacement
+
+set.seed(132)
+
+for (j in c(1:8)){
+  for (i in c(2:39)) {
+    sound.random = sample(c(1:39),1)
+   df = df %>% add_row(tibble(as_tibble(tempF[i][[1]][[j]]), sound = sound.random, day = j-1))
+  }
+  }
+  
+df$sound = factor(df$sound)
+df$day = factor(df$day)
+df.Day <-  df%>% filter(df$day==0)
+df.neurons <-  df.Day%>% select(V1:V34)
+
+#clustering
+dist_mat <- dist(df.neurons,method = "euclidian")
+hclust_avg <- hclust(dist_mat, method = "complete")
+cut_avg <- cutree(hclust_avg, k = 2)
+#table(cut_avg, df.Day$sound)
+
+```
+
+```{r,echo=T}
+
+
+table.accum <- matrix(, nrow=2,ncol=8)
+maxSecond <- matrix(, ncol=8)
+
+for (k in c(0:7)){
+  
+  df.Day <-  df%>% filter(df$day==k)
+
+
+df.neurons <-  df.Day%>% select(V1:V34)
+dist_mat <- dist(df.neurons,method = "euclidian")
+
+
+hclust_avg <- hclust(dist_mat, method = "average")
+cut_avg <- cutree(hclust_avg, k = 2)
+
+
+table.accum[,k+1] = table(cut_avg, df.Day$sound)[,33]
+maxSecond[k+1] = as.numeric(which.max(table(cut_avg, df.Day$sound)[2,]))
+
+}
+
+#Display the counts of 
+#table.accum
+maxSecond
+```
+
 #### Conclusion
 
 The identities of sounds and their distribution are different in a randomized sample, thus our recordings are likely not an artifact.
+
+```{r data reload post random, echo=TRUE}
+
+#reloading data again for further analysis
+
+f34c = NULL
+df = NULL
+dataMat = NULL
+
+dataMat <- R.matlab::readMat("sortAudFile.mat",fixNames=T, ) 
+f34c <-dataMat$sortAudFile[5]
+
+df<-as_tibble(f34c[[1]][[1]][[1]])
+
+df = df %>% add_column(sound = 1)
+df = df %>% add_column(day = 0)
+
+tempF = f34c[[1]]
+
+for (j in c(1:8)){
+  for (i in c(1:39)) {
+   df = df %>% add_row(tibble(as_tibble(tempF[i][[1]][[j]]),sound = i,day = j-1))
+  }
+  }
+  
+df$sound = factor(df$sound)
+df$day = factor(df$day)
+df.Day <-  df%>% filter(df$day==0)
+df.neurons <-  df.Day%>% select(V1:V34)
+
+```
 
 ## PCA analysis
 
 In order to assess correlations between variables (neurons #1 to #38) we perform *principal component analysis*.
 
-```{r, echo=T}
+```{r pca, echo=T}
 
 pca.neurons = prcomp(df.neurons, scale=TRUE, center = TRUE)
 
 pr.var <- (pca.neurons$sdev)^2
 pve=pr.var/sum(pr.var)
+```
 
- plot(pve, xlab="Principal Component",
+```{r pve plot}
+plot(pve, xlab="Principal Component",
      ylab="Proportion of Variance Explained ", ylim=c(0,1),type='b')
- 
-  plot(cumsum(pve), xlab="Principal Component ",
+```
+
+```{r cumpve plot}
+plot(cumsum(pve), xlab="Principal Component ",
      ylab=" Cumulative Proportion of Variance Explained ", ylim=c(0,1), type='b')
 
 abline(v =min(which((cumsum(pve)>=0.9))))
@@ -374,7 +436,7 @@ According to these rates, the model classifies a given observation in **\~3%** o
 
 The *testing error* is slightly higher than the *training error,* which can be expected due to the fact that none of the data in the **test** split were available for training.
 
-#### Plotting the ROC curve and computing AUC
+#### Plotting the ROC curve
 
 ```{r ROC glm, message=FALSE, warning=FALSE, echo=TRUE}
 prob.training.glm = NULL
@@ -385,13 +447,20 @@ perf.glm = performance(pred.glm, measure="tpr", x.measure="fpr")
 plot(perf.glm, col=2, lwd=3, main="ROC curve")
 abline(0,1)
 
+```
+
+####  Computing AUC
+
+```{r auc glm}
+
 auc.glm = performance(pred.glm, "auc")@y.values
 auc.glm
+
 ```
 
 **Conclusion:**
 
-The performance of the model as assessed by the *Area under curve* metric seems to be fairly good
+The performance of the model as assessed by the *Area under curve* **(AUC)** metric seems to be fairly good
 
 However, since the positive label is so sparse in our data, we should investigate more options of performance evaluation, starting with 10 fold cross-validation of the whole dataset.
 
@@ -416,8 +485,6 @@ Thus, we need should investigate what the rates are in between groups.
 Constructing a confusion matrix should provide the most insight into how well the model can classify whether an observation was or was not elicited by sound 33.
 
 ```{r conf matrix glm,echo=T}
-#as.factor(ifelse(sound == "33", "Yes","No")))
-
 
 prob.training.glm = as.factor(ifelse(predict(model.glm, type="response")>0.5,"Yes","No"))
 confusionMatrix(data = prob.training.glm, reference = train.cv$s33)
@@ -431,84 +498,78 @@ Although the overall accuracy of the model is high, it is clear that it's accura
 
 ### Ridge
 
-```{r eval=FALSE, include=FALSE}
+```{r ridge train, echo=TRUE}
 lambda.list.ridge = 1000 * exp(seq(0, log(1e-5), length = 100))
 
 train.neurons <- train.cv %>% select(V1:V34)
 train.labels <- as.factor(train.cv$s33)
+test.neurons <- test.cv %>% select(V1:V34)
+test.labels <- as.factor(test.cv$s33)
 
 
 #model.ridge=glmnet(train.neurons,train.labels,alpha=0,lambda=lambda.list.ridge,type.measure ='class', family = "binomial")
 
 
 set.seed(1)
-model.ridge.cv=cv.glmnet(as.matrix(train.neurons),train.labels, alpha = 0,nfolds = 5, lambda = lambda.list.ridge, family="binomial", type.measure ='class') 
+model.ridge.cv=cv.glmnet(as.matrix(train.neurons),train.labels, alpha = 0,nfolds = 10, lambda = lambda.list.ridge, family="binomial", type.measure ='class') 
 lambdaSelect <- model.ridge.cv$lambda.min
+model.ridge.cv$cvm[which (lambda.list.ridge==lambdaSelect)]
 plot(model.ridge.cv)
 abline(v = log(lambdaSelect))
 
-```
 
-training MSE for the model corresponding to the optimal value of 'lambda' selected by the cross-validation above?
+plot(model.ridge.cv$glmnet.fit, "lambda", label=FALSE)
+abline(v = log(lambdaSelect))
 
-```{r eval=FALSE, include=FALSE}
-    
-    model.ridge.cv$cvm[which (lambda.list.ridge==lambdaSelect)]
 
 ```
 
-test MSE
-
-```{r eval=FALSE, include=FALSE}
-
-pred.ridge=predict(model.ridge,s=lambdaSelect, newx = test.neurons, type="class") 
-#mean((pred.ridge-test.labels)^2)
+```{r ridge cmatrix, echo=TRUE}
 
 
+pred.ridge=predict(model.ridge.cv,s=lambdaSelect, newx = as.matrix(test.neurons), type="response") 
 
-#pred.ridge <- predict.cv.glmnet(mymodel, newx = trainingdf, 
- #                        s = 'lambda.min', type = 'class')
+pred.ridge = as.factor(ifelse(pred.ridge>0.5,"Yes","No")[,1])
 
-confusionMatrix(data =as_factor(pred.ridge), reference = test.cv$s33) 
+
+confusionMatrix(data = pred.ridge, reference = test.labels) 
 ```
 
 ### Lasso
 
-```{r eval=FALSE, include=FALSE}
+```{r lasso train, echo=TRUE}
 lambdaSelect = NULL
 
 lambda.list.lasso = 1000 * exp(seq(0, log(1e-5), length = 100))
 
 train.neurons <- train.cv %>% select(V1:V34)
-train.labels <- as.factor(train.cv$s33)
-test.neurons <- train.cv %>% select(V1:V34)
-
-model.lasso=glmnet(train.neurons,train.labels,alpha=1,lambda=lambda.list.lasso,type.measure ='class', family = "binomial")
-
+train.labels <- train.cv$s33
+test.neurons <- test.cv %>% select(V1:V34)
+test.labels <- test.cv$s33
 
 set.seed(1)
 model.lasso.cv=cv.glmnet(as.matrix(train.neurons),train.labels, alpha = 1,nfolds = 10, lambda = lambda.list.lasso, family="binomial") 
-lambdaSelect <- model.lasso.cv$lambda.min
-plot(model.lasso.cv)
-abline(v = log(lambdaSelect))
-model.lasso.cv$cvm[which (lambda.list.ridge==lambdaSelect)]
 
+lambdaSelect <- model.lasso.cv$lambda.min
+model.lasso.cv$cvm[which (lambda.list.ridge==lambdaSelect)]
+model.lasso.cv$nzero[which (lambda.list.ridge==lambdaSelect)]
+
+plot(model.lasso.cv$glmnet.fit, "lambda", label=FALSE)
+abline(v = log(lambdaSelect))
 ```
 
-```{r eval=FALSE, include=FALSE}
-pred.lasso=predict(model.lasso.cv,s=lambdaSelect, newx = test.neurons, type="class") 
-#mean((pred.ridge-test.labels)^2)
+```{r validation lass, echo=TRUE}
+pred.lasso=predict(model.lasso.cv,s=lambdaSelect, newx = as.matrix(test.neurons), type="response") 
 
+pred.lasso = as.factor(ifelse(pred.lasso>0.5,"Yes","No")[,1])
 
-
-#pred.ridge <- predict.cv.glmnet(mymodel, newx = trainingdf, 
- #                        s = 'lambda.min', type = 'class')
-
-confusionMatrix(data =as_factor(pred.lasso), reference = test.cv$s33) 
+confusionMatrix(data= pred.lasso, reference = as.factor(test.labels))
 
 ```
 
 ## Tree models
+
+### Regular
 
 ```{r basic tree, message=FALSE, warning=FALSE, echo=T}
 
@@ -517,17 +578,21 @@ summary(model.tree)
 
 ```
 
-```{r,echo=T, eval=FALSE, include=FALSE}
+```{r crossval tree, echo=TRUE}
 cv <- cv.tree(model.tree, K=10, FUN = prune.misclass)
 best.cv = min(cv$size[cv$dev == min(cv$dev)])
 
-model.tree.cv = prune.misclass (model.tree, best=best.cv)
-draw.tree(model.tree.cv,nodeinfo = T)
-text(model.tree.cv, pretty=0, col = "blue", cex = .5)
+best.cv
+
+#model.tree.cv = prune.misclass (model.tree, best=best.cv)
+#draw.tree(model.tree.cv,nodeinfo = T)
+#text(model.tree.cv, pretty=0, col = "blue", cex = .5)
 ```
 
-```{r,echo=T}
-prob.training=NULL
+#### Validation
+
+```{r tree validation,echo=T}
+prob.training.tree=NULL
 
 prob.training.tree = predict(model.tree, test.cv, type="class")
 
@@ -535,9 +600,9 @@ prob.training.tree = predict(model.tree, test.cv, type="class")
 confusionMatrix(data = prob.training.tree, reference = test.cv$s33)
 ```
 
-#### Boosted trees to tackle the low number of positive cases to learn on
+#### Boosted trees
 
-```{r,echo=T,warning=F}
+```{r boosted trees, warning=FALSE,echo=TRUE}
 
 set.seed(123)  # for reproducibility
 
@@ -558,33 +623,36 @@ model.rfor = randomForest(s33 ~ ., data = train.cv, ntree=500, strata=s33, impor
 
 model.rfor
 
-
-#plot(model.rfor)
-#legend("top", colnames(model.rfor$err.rate),col=1:4,cex=0.8,fill=1:4)
-
-#model.rfor$importance
-
 ```
 
 ### Support Vector Machines
 
-```{r}
+```{r svm tuning, cache=TRUE}
+  obj <- tune(svm, s33~.,
+                  data = train.cv,
+                  ranges = list(gamma = 2^(-5:5), cost = 2^(1:8)),
+                  tunecontrol = tune.control(cross = 5, nboot = 10,sampling = "boot")
+             )
+  
+  summary.svm<-summary(obj)
+  best.gamma.svm<-summary.svm$best.parameters[,1]
+  best.cost.svm<-summary.svm$best.parameters[,2]
+```
 
+```{r svm training, message=FALSE, warning=FALSE}
 model.svm = svm(formula = s33 ~ .,
                  data = train.cv,
                  type = 'C-classification',
                  kernel = 'polynomial',
-                degree = 4,
-                scale = TRUE,
-                cross = 100,
-                tolerance = 0.01,
-                cost = 10,
-                shrinking = FALSE
+                cost = best.cost.svm,
+                gamma = best.gamma.svm
                 )
 
 ```
 
-```{r}
+#### Validation of SVM
+
+```{r svm validation}
 pred.svm = predict(model.svm, newdata = test.cv)
 
 confusionMatrix(data = pred.svm, reference = test.cv$s33)
