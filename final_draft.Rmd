@@ -939,4 +939,20 @@ SVMs did not perform better than the previously applied models. A possible reaso
 
 # Discussion
 
+We have analyzed a real-world calcium imaging dataset using methods of statistical machine learning, in order to demonstrate the existence of stable stimulus representation in neuronal activity.
+
+After a significant amount of analysis performed within MATLAB (due to the limited availability of fluorescence processing tools in R), we were able to import and reformat a dataset representing recordings of neuronal activity of single cells within the murine auditory cortex.
+
+Using unsupervised learning, we were able to select a candidate sound of interest (**sound 33**) in a specific mouse (**f34c**)by assessing its capacity to be clustered into a non-general mode of response of the population. As such we have succeeded in completing our first experimental aim.
+
+Next, we tried fitting multiple model classes and strategies in order to train a classifier able to distinguish between the sound of interest and the rest of the stimuli.
+
+We report that the **logistic regression** model displayed the best performance in terms of correctly classifying the positive case of population activity elicited by sound 33.
+
+Although not an ideal classifier, given the nature of the data and its high trial-to-trial variability, this can be regarded as a positive result suggesting that the population response to a specific sound is something a machine learning model can be trained to recognize, thus adding relevance to the ideas presented in the theoretical introduction.
+
+The reason for this result might be, hypothetically, that logistic regression has a tendency for **higher bias and lower variance**, which makes it less prone to overfitting and enables it to make stronger assumptions. Thus, it can possibly be able to take a more "holistic" approach without being overly dependent on the quality (in terms of noise for example or sparsness) of the training dataset.
+
+On the other hand, decision trees and SVMs are more prone to be negatively influenced by noisy data as they rely on quality training sets. They are able to capture non-linearity within the data, but this advantage is perhaps rendered obsolete by the lower quality of the training data.
+
 # References
