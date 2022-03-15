@@ -66,13 +66,13 @@ During stimulation, changes in fluorescence of the calcium indicator were record
 
 Time bins of 250ms after the presentation of the stimulus (39 randomized stimuli in 1 trial, 1s interstimulus intervals, 10 trials per session) were analyzed using the in-house developed TwoPhotonProcessor software \[@tomek2013a\]. Spike probabilities were extracted from changes in fluorescence cause by action potential evoked calcium transients using the foopsi algorithm and compiled in MATLAB into matrix form (fig.4).
 
-![fig.4, Calcium transients evoked by action potentials and reported by calcium indicators can be used as a proxy for neuronal activity](images/Screenshot%202022-03-15%20at%2009.10.38.png "Changes in fluorescence represent neuronal activity")
+![fig.4, Calcium transients evoked by action potentials and reported by calcium indicators can be used as a proxy for neuronal activity, Rows: neurons, Columns: trials, ](images/Screenshot%202022-03-15%20at%2009.10.38.png "Changes in fluorescence represent neuronal activity")
 
 We have revisited the same FOV one day after the first session and subsequently every five days until day+30. The same battery of stimuli was presented to the same neurons under matching conditions. Fig.5 provides an example of how the activity pattern elicited by a single sound (sound6) changes bewteen sessions (titles above columns (yyyymmdd))
 
 The resulting dataset it comprised of 15 FOVs from 11 animals and as such is imported into R.
 
-![fig.5, Activity of neurons elicited by sound 6 in a single FOV revisited multiple times. Rows:neurons, Columns:trials, rectangles:Sessions](images/paste-FA592D8C.png "neuronal representation of "Sound 6" over the course of one month")
+![fig.5, Activity of neurons elicited by sound 6 in a single FOV revisited multiple times. Rows: neurons, Columns: trials, rectangles: Sessions](images/paste-FA592D8C.png "neuronal representation of "Sound 6" over the course of one month")
 
 ## Experimental aim
 
