@@ -19,7 +19,7 @@ The deciphering of the neural code is one of the last grand mysteries of physiol
 
 The aim of this project is to apply techniques of statistical machine learning to real-world neuronal activity data and help describe how sensory stimuli are represented in the murine auditory cortex.
 
-This project is a part of the PSTAT 231 course (instructed by dr. Katie Coburn [@d]). Since the overall objective of this project is to learn how to use the tools we were presented during class, we will try to fit as many models as possible.
+This project is a part of the PSTAT 231 course (instructed by dr. Katie Coburn [@d]). Since the overall objective of this project is to learn how to use the tools we were presented during class, we will try to fit as many models we covered during class as possible.
 
 # Introduction
 
@@ -29,16 +29,30 @@ The classical approach towards studying brain areas handling sensory information
 
 Although such linear coding of single input components is supported by data from lower levels of the auditory pathway [@andoni2007\], neurons from higher levels express significant non-linearity in their response patterns \[@bathellier2012; @nelken2004; @deneux2016] (. For example, certain neurons specifically respond to unique physical attributes of natural sounds rather than being strictly frequency-tuned [@theunissen2014]. These non-linear responses are context-dependent [@kato2015], thus oppose the classic, exclusively feed-forward model and require the inclusion of input from local neuronal populations. 
 
-In the light of growing evidence, it became apparent that the application of the classical receptive field concept in the auditory cortex should be revisited and possible alternatives need to be investigated. Another important factor was the appearance of novel techniques capable of recording large genetically defined neural populations,which has enabled in vivo testing of alternative models (namely two-photon imaging of genetically encoded calcium indicators (Lutcke and Helmchen 2011, Chen et al. 2013)). Unlike the classical electrophysiological approach, these are not limited to recordings of a small number of neurons, a limitation having strongly shaped the direction of scientific effort in the past.
+In the light of growing evidence, it became apparent that the application of the classical receptive field concept in the auditory cortex should be revisited and possible alternatives need to be investigated. Another important factor was the appearance of novel techniques capable of recording large genetically defined neural populations,which has enabled in vivo testing of alternative models (namely two-photon imaging of genetically encoded calcium indicators [@lütcke2011; @chen2013]. Unlike the classical electrophysiological approach, these are not limited to recordings of a small number of neurons, a limitation having strongly shaped the direction of scientific effort in the past.
 
-The search for an alternative brought attention to a model already proposed for the hippocampal navigational apparatus. Here, specialized cell-types such as head direction cells or place cells encode spatial navigation and their activity is hypothesized to be organized following an attractor network model (Redish 1999, Zhang 1996). The attractor network model suggests that a specifically stimulated neuron excites cells of similar tuning (highly interconnected) while the lack activation results in the inhibition of cells responsive to different values of the given variable (due to a global inhibition net) (Redish 1999).
+The search for an alternative brought attention to a model already proposed for the hippocampal navigational apparatus. Here, specialized cell-types such as head direction cells or place cells encode spatial navigation and their activity is hypothesized to be organized following an attractor network model [@zhang1996; @redish1999]. The attractor network model suggests that a specifically stimulated neuron excites cells of similar tuning (highly interconnected) while the lack activation results in the inhibition of cells responsive to different values of the given variable (due to a global inhibition net) [@redish1999].
 
 \
-The activity of local cortical networks (of span \~200 µm) was discovered to be limited to very few reciprocally competitive response modes (mostly 1-3), while the shift between them is abrupt (Bathellier et al. 2012), thus expressing attractor-like dynamics. Such discrete shifting between few possible modes suggests, that the attractor-like dynamics could form a base for the encoding of perceptual categories (Wang 2008). Moreover, the role of the auditory cortex has recently been hypothesized to lie within a more complex processing of the auditory input than previously thought, namely representing sounds as auditory objects (Russ, Lee and Cohen 2007). Since the sensory categorization offers a balanced coding strategy between detail acquisition and generalization across experiences (Seger and Miller 2010), it reasonably fits within the current context of the auditory cortex.
+The activity of local cortical networks (of span \~200 µm) was discovered to be limited to very few reciprocally competitive response modes (mostly 1-3), while the shift between them is abrupt [@bathellier2012b], thus expressing attractor-like dynamics. Such discrete shifting between few possible modes suggests, that the attractor-like dynamics could form a base for the encoding of perceptual categories (Wang 2008). Moreover, the role of the auditory cortex has recently been hypothesized to lie within a more complex processing of the auditory input than previously thought, namely representing sounds as auditory objects [@russ2007]. Since the sensory categorization offers a balanced coding strategy between detail acquisition and generalization across experiences [@seger2010], it reasonably fits within the current context of the auditory cortex.
 
-In summary, the investigation of discrete network dynamics and categorization in the mouse auditory cortex by Bathellier et al. (Bathellier et al. 2012) has produced a significant amount of useful information. Among these is evidence supporting the idea that it is not single neurons but hundreds of cells, which form a functional unit in the neocortex (Averbeck, Latham and Pouget 2006). Moreover, it was shown that single subnetworks are comprised of a redundant number of cells and are non-discretely divided, possibly to counter the high overall noise. However, most importantly, it was shown that different response modes (of a local neuronal network) recorded by calcium imaging reflect the categorization of sounds observed also behaviorally, thus suggesting that the attractor final states may be directly representing the perceptual category. 
+In summary, the investigation of discrete network dynamics and categorization in the mouse auditory cortex by [@bathellier2012] ( has produced a significant amount of useful information. Among these is evidence supporting the idea that it is not single neurons but hundreds of cells, which form a functional unit in the neocortex ([@averbeck2006] Moreover, it was shown that single subnetworks are comprised of a redundant number of cells and are non-discretely divided, possibly to counter the high overall noise. However, most importantly, it was shown that different response modes (of a local neuronal network) recorded by calcium imaging reflect the categorization of sounds observed also behaviorally, thus suggesting that the attractor final states may be directly representing the perceptual category.
+
+In their experiments, Bathellier et al. have used a small organic dye, Oregon Green BAPTA-1 (OGB-1), which was the state-of-the-art calcium indicator at the time. Unfortunately, the use of OGB-1 is restricted to acute experiments only.
+
+In this study, our aim was to reproduce the experiments performed by Bathellier et al. using a genetically encoded calcium indicator GCaMP7f [@dana2019], one of the first protein-based sensors matching the performance of OGB-1, and take advantage of the possibility to generate chronic preparations. Using this protocol, we set out to describe the temporal stability of cortical dynamics, namely that of cortical representations of complex auditory stimuli
 
 ## Materials and Methods
+
+Mice were implanted with chronic cranial windows over their right auditory cortex. Expression of a genetically encoded calcium indicator GCaMP7f (Addgene catalog number: 104488-AAV9) in the underlying tissue was achieved using microinjection (Nanoject iii, Drummond inc.).
+
+![fig.1, example of a mouse implante with a chronic cranial window over its right auditory cortex](mouse.jpg "mouse implanted with a chronic window")
+
+After three weeks of recovery, mice were checked for expression and entered the imaging protocol.
+
+![fig.2, Chronic cranial window over mouse auditory cortex. Bright spots indicate GCaMP7f expression](epi.png "Epifluorescence image")
+
+During the first day of imaging (day 0), multiple fields of view (fig.x) were subjected to 10 repeats of a 39-stimulus battery of auditory stimuli. These include pure tones, complex sounds and natural stimuli mimicking what could be a physiologically relevant auditory percept. The stimulation battery was kindly provided by dr. Bathellier.
 
 ## Library loading
 
@@ -253,7 +267,7 @@ Finding clusters of similar activity patterns within a **randomized** (random sa
 
 #### Scrambling sound identities with replacement
 
-```{r hclust randomized, echo=T}
+```{r hclust randomized, echo=T, warning=FALSE}
 
 #reloading data
 
@@ -330,6 +344,8 @@ maxSecond
 
 The identities of sounds and their distribution are different in a randomized sample, thus our recordings are likely not an artifact.
 
+**Next we reload the non-randomized data for further analysis**
+
 ```{r data reload post random, echo=TRUE}
 
 #reloading data again for further analysis
@@ -373,10 +389,14 @@ pr.var <- (pca.neurons$sdev)^2
 pve=pr.var/sum(pr.var)
 ```
 
+**The graphical representation of the proportion of variance explained by single principal components**
+
 ```{r pve plot}
 plot(pve, xlab="Principal Component",
      ylab="Proportion of Variance Explained ", ylim=c(0,1),type='b')
 ```
+
+**The graphical representation of the *cumulative* proportion of variance explained by single principal components**
 
 ```{r cumpve plot}
 plot(cumsum(pve), xlab="Principal Component ",
@@ -419,12 +439,17 @@ train.index <- createDataPartition(df$s33, p = .7, list = FALSE)
 
 train <- df[ train.index,]
 test  <- df[-train.index,]
-length(which(test$s33=="Yes"))
 ```
 
 ## Model fitting
 
+The choice of which model to try fitting is determined by the data. We aim to try and fit as many of the model classes we covered during class as possible.
+
+Since the the task at hand is to train a model to **classify** whether a population response was or was not elicited by sound 33, we will start with *logistic regression*
+
 ### Logistic regression
+
+The dataset needs to be further **formatted** in order to satisfy the input requirements by the *glm*() function. Whats is presented to the model is the activity of neurons (variables V1:V38) and a factor variable of levels Yes/No determining whether the observation was recorded in response to sound 33 or not.
 
 ```{r certain values, echo=T, message=FALSE, warning=FALSE}
 #generate subdatasets of only activity data for learning purposes
@@ -432,6 +457,8 @@ excl<-c('sound','day','id')
 train.cv <- train %>% select(., -excl)
 test.cv <- test %>% select(., -excl)
 ```
+
+**Model training**
 
 ```{r GLM fit, echo=T, message=FALSE, warning=FALSE}
 model.glm = glm(formula = s33~., data=train.cv, family = binomial)
@@ -453,9 +480,18 @@ Minor formatting of prediction output is needed to obtain a training and testing
 ```{r glm errors, message=FALSE, warning=FALSE, echo=T}
 prob.training.glm = NULL
 prob.training.glm = as.factor(ifelse(predict(model.glm, type="response")>0.5,"Yes","No"))
+```
 
+Training error
+
+```{r training error, echo=T}
 trainError<- calc_error_rate(prob.training.glm,train$s33)
 trainError
+```
+
+Test error
+
+```{r test error, echo=T}
 testError<- calc_error_rate(prob.training.glm,test$s33)
 testError
 ```
@@ -467,6 +503,8 @@ According to these rates, the model classifies a given observation in **\~3%** o
 The *testing error* is slightly higher than the *training error,* which can be expected due to the fact that none of the data in the **test** split were available for training.
 
 #### Plotting the ROC curve
+
+Another useful metric for assessing the performance of a classifier is the *Receiver Operating Characteristic* (ROC) curve plotting the **True positive rate** against the **False positive rate.**
 
 ```{r ROC glm, message=FALSE, warning=FALSE, echo=TRUE}
 prob.training.glm = NULL
@@ -480,6 +518,8 @@ abline(0,1)
 ```
 
 #### Computing AUC
+
+*Area under curve* (AUC) is a useful metric describing the performance of the classifier based on the ROC curve. Ranging from 0 to 1, the resulting number is a good indicator of the percentual accuracy of model predictions.
 
 ```{r auc glm}
 
@@ -496,14 +536,24 @@ However, since the positive label is so sparse in our data, we should investigat
 
 #### Cross-validation using the whole dataset for a better estimate of the test error.
 
+In order to solidify our results, it is useful to perform cross-validation, meaning we retrain our model on multiple randomly selected subsets of data. The aim of this approach is to mitigate the danger of skewed results caused by the nature of the data and provide a statistically relevant result.
+
 ```{r cv glm, echo=T, warning=F}
 
 cost <- function(r, pi = 0) mean(abs(r-pi) > 0.5)
 
 model.glm.cv<-cv.glm(test.cv,model.glm,cost,10)
+
+```
+
+The two values below describe:
+
+-   The raw cross-validation estimate of prediction error.
+
+-   The adjusted cross-validation estimate designed to compensate for the bias introduced by not using leave-one-out cross-validation.
+
+```{r cv glm delta, echo=TRUE}
 model.glm.cv$delta
-
-
 ```
 
 10-fold cross validation has produced similar error rates. However, this does not necessarily solve the problem of having too little positive cases (meaning cases when an observation belongs to sound 33). This metric might be very heavily skewed by the fact that classifying a non33 observation correctly also results in a true positive.
@@ -526,7 +576,13 @@ confusionMatrix(data = prob.training.glm, reference = train.cv$s33)
 
 Although the overall accuracy of the model is high, it is clear that it's accuracy in terms of correctly predicting the YES case in sound33 variable is fairly **poor**.
 
+## **Regularization of logistic regression models**
+
+Building on the logistic regression model, we can try and improve its performance by introducing penalties to different coefficients of the model. This can prevent overfitting and aid with classification performance.
+
 ### Ridge
+
+The first regularization method we will try is *ridge* regression. In this case, we perform *L2 regularization* meaning we impose a penalty equaling the **square** of the magnitude of coefficients. As such, no coefficients can reach zero.
 
 ```{r ridge train, echo=TRUE}
 lambda.list.ridge = 1000 * exp(seq(0, log(1e-5), length = 100))
