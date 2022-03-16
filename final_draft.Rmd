@@ -153,7 +153,7 @@ df.Day <-  df%>% filter(df$day==0)
 df.neurons <-  df.Day%>% select(V1:V34)
 ```
 
-# Exploratory
+# EDA
 
 To be supplied by Katti
 
